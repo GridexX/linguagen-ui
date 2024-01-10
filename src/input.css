@@ -1,0 +1,13 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@font-face {
+  font-family: "BezziaBlackItalic";
+  src: url("../fonts/BezziaStudent-BlackItalic.otf");
+}
+
+@font-face {
+  font-family: "BezziaSemiBold";
+  src: url("../fonts/BezziaStudent-SemiBold.otf");
+}

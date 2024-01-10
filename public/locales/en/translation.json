@@ -1,0 +1,18 @@
+{
+  "common": {
+    "description": "A simple game about generating random words",
+    "footer": "Made by <1>GridexX</1> during Christmas Holidays 🎄"
+  },
+  "app": {
+    "generate": "Generate a word",
+    "refresh": "Pick another word",
+    "definition": "See definition",
+    "search": "Search definition on Google"
+  },
+  "settings": {
+    "name": "Settings",
+    "darkMode": "Dark Mode",
+    "language": "language",
+    "definition": "Show definitions on load"
+  }
+}

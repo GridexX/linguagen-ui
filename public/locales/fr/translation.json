@@ -1,0 +1,12 @@
+{
+  "common": {
+    "description": "Une application pour générer des mots aléatoires",
+    "footer": "Crée par <1>GridexX</1> pendant les vancances de Noel 🎄"
+  },
+  "settings": {
+    "name": "Paramètres",
+    "darkMode": "Mode sombre",
+    "language": "langue",
+    "definition": "Afficher les définitions au préchargement"
+  }
+}
