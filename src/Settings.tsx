@@ -2,7 +2,7 @@ import { Checkbox, Select, SelectItem } from "@nextui-org/react"
 import {  useAtom } from "jotai"
 import { Language, darkModeAtom, languageAtom, languages, showDefinitionOnLoad } from "./variables"
 import { useTranslation } from "react-i18next";
-import { SetStateAction, useEffect } from "react";
+import { SetStateAction } from "react";
 
 export default function SettingsPage() {
 
@@ -13,11 +13,7 @@ export default function SettingsPage() {
 
   const [showDefinition, setShowDefinition] = useAtom(showDefinitionOnLoad);
 
-  const { t, i18n } = useTranslation();
-
-  useEffect(() => {
-    i18n.changeLanguage(language.key)
-  }, [language, i18n])
+  const { t } = useTranslation();
 
   const changeLanguage = (e: {target: {value: string}}) => {
     console.log(e.target.value)

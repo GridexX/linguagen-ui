@@ -1,6 +1,6 @@
 {
   "common": {
-    "description": "A simple game about generating random words",
+    "description": "A simple app about generating random words",
     "footer": "Made by <1>GridexX</1> during Christmas Holidays 🎄"
   },
   "app": {

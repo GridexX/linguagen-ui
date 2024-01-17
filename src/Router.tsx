@@ -3,7 +3,7 @@ import App from "./App";
 import { ArrowBigLeft, Settings } from "lucide-react";
 import SettingsPage from "./Settings";
 import { useAtom } from "jotai";
-import { darkModeAtom } from "./variables";
+import { darkModeAtom, languageAtom } from "./variables";
 import { Trans, useTranslation } from "react-i18next";
 import { Link } from "@nextui-org/react";
 
@@ -16,6 +16,14 @@ type Route = (typeof routes)[keyof typeof routes];
 
 export default function Router() {
   const [route, setRoute] = useState<Route>("App");
+
+  const [language] = useAtom(languageAtom);
+
+  const {i18n} = useTranslation();
+
+  useEffect(() => {
+    i18n.changeLanguage(language.key)
+  }, [language, i18n])
 
   const [darkModeString, setDarkModeString] = useState("");
 
