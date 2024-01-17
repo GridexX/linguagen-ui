@@ -60,7 +60,7 @@ export default function Router() {
       )}
 
       <div className="w-full min-h-screen max-h-min flex flex-col justify-around items-center">
-        <div className="flex flex-col items-center">
+        <div className="flex flex-col items-center px-2">
           <Link href='/'>
           <img src="logo.png" className="w-24" />
           </Link>

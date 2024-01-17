@@ -167,7 +167,7 @@ const App: React.FC = () => {
     <div>
       {failed && <p style={{ color: "red" }}>{t("error_fetching")}</p>}
       <div className="flex flex-col items-center gap-4">
-        <div className="flex flex-col w-[400px] items-start gap-4">
+        <div className="flex flex-col max-w-[400px] items-start gap-4">
           {isFetching && (
             <div className="flex flex-row items-center gap-3">
               <Spinner />
@@ -183,7 +183,7 @@ const App: React.FC = () => {
           {isLoading ||
             (isDefFetching && (
               <div className="flex flex-row items-center gap-3">
-                <Spinner color="white" />
+                <Spinner color="default" />
                 <small>Récupération de la définition...</small>
               </div>
             ))}
@@ -221,11 +221,11 @@ const App: React.FC = () => {
           name={translation}
         />
       )}
-      <div className="flex flex-col items-center justify-start space-y-4">
+      <div className="flex flex-col items-center justify-start space-y-4 px-2">
         {word && !isFetching && (
           <>
             {language.key === "en" && <Code size="lg">{word}</Code>}
-            {dictionaryData.length < 1 && !isError && !isLoading && (
+            {dictionaryData.length < 1 && !isError && !isLoading && !isDefFetching && (
               <Button color="secondary" size="sm" onClick={() => reload()}>
                 {t("app.see_definition")}
               </Button>

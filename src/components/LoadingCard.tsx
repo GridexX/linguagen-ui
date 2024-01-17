@@ -8,7 +8,7 @@ import {
 } from "@nextui-org/react";
 
 const LoadingCard = () => (
-  <Card className="w-[600px]" radius="lg">
+  <Card className="max-w-[600px]" radius="lg">
     <CardHeader className="flex flex-row items-center gap-2"> 
     <Skeleton className="h-16 w-16 rounded-xl">
       <div className="h-16 w-16 rounded-xl bg-default-300"></div>
