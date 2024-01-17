@@ -1,72 +1,31 @@
 // App.tsx
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import { useQuery } from "react-query";
 import axios from "axios";
-import { z, ZodError } from "zod";
+import {  ZodError } from "zod";
 import {
-  Accordion,
-  AccordionItem,
   Button,
   Code,
+  Progress,
   Spinner,
+  User,
 } from "@nextui-org/react";
 import { useAtom } from "jotai";
-import { Language } from "./Settings";
 import { languageAtom, showDefinitionOnLoad } from "./variables";
 import { useGetFrenchDefinition } from "./api/useGetFrenchDefinition";
+import {
+  DictionnaryResponse,
+  dictionaryResponseSchema,
+  randomSchema,
+  translationSchema,
+} from "./api/types";
+import { useTranslation } from "react-i18next";
+import EnglishDefinitions from "./components/EnglishDefinitions";
+import FrenchDefinitions from "./components/FrenchDefinitions";
+import { singularizeInFrench } from "./utils";
 
 const API_URL = import.meta.env.VITE_API_URL;
 const WIKI_URL = import.meta.env.VITE_WIKI_URL;
-
-const translationSchema = z.object({ translation: z.string() });
-
-// Define the expected response for a random word
-const randomSchema = z.object({
-  word: z.string(),
-});
-
-const dictionaryResponseSchema = z.array(
-  z.object({
-    word: z.string(),
-    phonetics: z.array(
-      z.object({
-        audio: z.string().optional(),
-        text: z.string().optional(),
-        sourceUrl: z.string().optional(),
-        license: z
-          .object({
-            name: z.string(),
-            url: z.string(),
-          })
-          .optional(),
-      })
-    ),
-    meanings: z.array(
-      z.object({
-        partOfSpeech: z.string(),
-        definitions: z.array(
-          z.object({
-            definition: z.string(),
-            synonyms: z.array(z.string()).optional(),
-            antonyms: z.array(z.string()).optional(),
-            example: z.string().optional(),
-          })
-        ),
-        synonyms: z.array(z.string()).optional(),
-        antonyms: z.array(z.string()).optional(),
-      })
-    ),
-    license: z
-      .object({
-        name: z.string(),
-        url: z.string(),
-      })
-      .optional(),
-    sourceUrls: z.array(z.string()).optional(),
-  })
-);
-
-type DictionnaryResponse = z.infer<typeof dictionaryResponseSchema>;
 
 // type RandomResponse = z.infer<typeof randomSchema>;
 // type TranslationResponse = z.infer<typeof translationSchema>;
@@ -92,17 +51,37 @@ const App: React.FC = () => {
 
   const [showDefinition] = useAtom(showDefinitionOnLoad);
 
-  useEffect(() => {
-    const fetchTranslation = async () => {
+  // Translate the word for the translation
+  const { isFetching: isTranslationFetching } = useQuery(
+    word ?? "fetchTranslation",
+    async () => {
       const { data } = await axios.post(`${API_URL}/translate`, { text: word });
-      const { translation: trans } = translationSchema.parse(data);
-      console.log(`translation: ${trans}`);
-      setTranslation(trans);
-    };
-    if (language.key !== "en" && word !== null) {
-      fetchTranslation();
+      return translationSchema.parse(data);
+    },
+    {
+      enabled: language.key !== "en" && word !== null,
+      retry: false,
+      refetchOnMount: false,
+      refetchOnReconnect: false,
+      refetchInterval: 960000,
+      refetchOnWindowFocus: false,
+      retryOnMount: false,
+      onSuccess(data) {
+        const { translation } = data;
+        const translationSingular = singularizeInFrench(translation);
+        setTranslation(translationSingular);
+        setSearch(translationSingular);
+      },
+      onError: (error: unknown) => {
+        if (error instanceof ZodError) {
+          console.error("Validation error:", error.errors);
+        } else {
+          console.error("An error occurred while fetching translation:", error);
+        }
+      },
     }
-  }, [language, word]);
+  );
+
   // Function to fetch dictionary data
   const fetchDictionaryData = async () => {
     try {
@@ -114,8 +93,9 @@ const App: React.FC = () => {
       if (axios.isAxiosError(error) && error.response?.status === 404) {
         // Handle 404 error (definition not found)
         console.warn(`Definition not found for the word "${word}".`);
-        // Try the word without a `s` for singular
-        if(word[word?.length-1] === "s") {
+
+        // TODO Use a singular package Try the word without a `s` for singular
+        if (word && word[word?.length - 1] === "s") {
           const { data } = await axios.get(`${WIKI_URL}/${word}`);
           // Validate the response format
           dictionaryResponseSchema.parse(data);
@@ -128,7 +108,7 @@ const App: React.FC = () => {
     }
   };
 
-  // Use react-query to handle data fetching
+  // Fetch a random word first
   const {
     refetch,
     isFetching,
@@ -145,20 +125,18 @@ const App: React.FC = () => {
     },
   });
 
-  console.log("word/trans "+word+" "+translation)
-
   const {
     isFetching: isLoading,
     refetch: reload,
     isError,
-  } = useQuery(word??"dictionnaryData", fetchDictionaryData, {
+  } = useQuery(word ?? "dictionnaryData", fetchDictionaryData, {
     retry: false,
     refetchOnMount: false,
     refetchOnReconnect: false,
     refetchInterval: 960000,
     refetchOnWindowFocus: false,
     retryOnMount: false,
-    enabled: showDefinition,
+    enabled: showDefinition && language.key === "en",
     onSuccess: (data) => setDictionaryData(data),
     onError: (error: unknown) => {
       if (error instanceof ZodError) {
@@ -169,129 +147,140 @@ const App: React.FC = () => {
     },
   });
 
-  const [frenchDef, setFrenchDef] = useState();
+  const { t } = useTranslation();
 
-  const all = useGetFrenchDefinition(translation);
+  const progressValue = () => {
+    if (isFetching) return 25;
+    else if (isTranslationFetching) return 50;
+    else if (isLoading || isDefFetching) return 75;
+    else return 100;
+  };
 
-  // console.log(all)
-
-  useEffect(() => {
-
-
-    if(language.key === "fr" && translation) {
-      console.log("Hey")
-    }
-
-  },[frenchDef, language, translation])
+  const {
+    setWord: setSearch,
+    definition,
+    isError: isDefError,
+    isFetching: isDefFetching,
+  } = useGetFrenchDefinition();
 
   return (
     <div>
-      {failed && (
-        <p style={{ color: "red" }}>
-          There is an error fetching words, try again later
-        </p>
-      )}
-      {!isFetching && !word && (
-        <Button
-          color="primary"
-          disabled={isFetching || failed}
-          onClick={() => refetch()}
-        >
-          Generate Word
-        </Button>
-      )}
-      {isFetching && <Spinner></Spinner>}
-      {word && !isFetching && (
-        <div className="flex flex-col items-center justify-start space-y-4">
-          <Code size="lg">{language.key === "en" ? word : translation}</Code>
-          {dictionaryData.length < 1 && !isError && !isLoading && (
-            <Button color="secondary" size="sm" onClick={() => reload()}>See definition</Button>
-          )}
-          {isError && (
-            <div>
-              <small style={{ color: "grey" }}>
-                <i>Definition not found.</i>
-              </small>
-              <br />
-              <a
-                href={`https://www.google.com/search?q=${encodeURIComponent(
-                  `Definition ${word}`
-                )}`}
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                Search on Google
-              </a>
+      {failed && <p style={{ color: "red" }}>{t("error_fetching")}</p>}
+      <div className="flex flex-col items-center gap-4">
+        <div className="flex flex-col w-[400px] items-start gap-4">
+          {isFetching && (
+            <div className="flex flex-row items-center gap-3">
+              <Spinner />
+              <small>Récupération d'un mot aléatoire...</small>
             </div>
           )}
-
-          {!isLoading &&
-            dictionaryData.map((entry, index) => (
-              <Accordion
-                key={index}
-                selectionMode="multiple"
-                variant="shadow"
-                defaultExpandedKeys={entry.meanings.map((_, index) =>
-                  index.toString()
-                )}
-              >
-                {entry.meanings.map((meaning, meaningIndex) => (
-                  <AccordionItem
-                    key={meaningIndex}
-                    title={`${meaning.partOfSpeech[0].toUpperCase()}${meaning.partOfSpeech.slice(
-                      1
-                    )}`}
-                  >
-                    <ol>
-                      {meaning.definitions.map(
-                        (definition, definitionIndex) => (
-                          <div className="pt-3" key={definitionIndex}>
-                            <p className="text-default-900 text-lg w-3/4 font-semibold">
-                              {`${definitionIndex + 1}. ${
-                                definition.definition
-                              }`}
-                            </p>
-                            {definition.synonyms &&
-                              definition.synonyms.length > 0 && (
-                                <div className="p-4">
-                                  <h3 className="text-xl">Synonyms</h3>
-                                  <p className="text-sm text-default-500 italic">
-                                    {definition.synonyms.join(", ")}
-                                  </p>
-                                </div>
-                              )}
-                            {definition.antonyms &&
-                              definition.antonyms.length > 0 && (
-                                <div>
-                                  <h3>Antonyms</h3>
-                                  <p>
-                                    Antonyms: {definition.antonyms.join(", ")}
-                                  </p>
-                                </div>
-                              )}
-                            {definition.example && (
-                              <span>Example: {definition.example}</span>
-                            )}
-                          </div>
-                        )
-                      )}
-                    </ol>
-                  </AccordionItem>
-                ))}
-              </Accordion>
-            ))}
-          {word && !failed && !isFetching && (
-            <Button
-              color="default"
-              size="sm"
-              disabled={isFetching}
-              onClick={() => refetch()}
-            >
-              Pick Another Word
-            </Button>
+          {isTranslationFetching && (
+            <div className="flex flex-row items-center gap-3">
+              <Spinner color="secondary" />
+              <small>Récupération de la traduction...</small>
+            </div>
           )}
+          {isLoading ||
+            (isDefFetching && (
+              <div className="flex flex-row items-center gap-3">
+                <Spinner color="white" />
+                <small>Récupération de la définition...</small>
+              </div>
+            ))}
+          {(isFetching ||
+          isLoading ||
+          isTranslationFetching ||
+          isDefFetching) && <Progress value={progressValue()} className="max-w-md" />}
         </div>
+        {/* {(isFetching ||
+          isLoading ||
+          isTranslationFetching ||
+          isDefFetching) && (
+          <>
+            <LoadingCard />
+            
+          </>
+        )} */}
+        {!isFetching && !word && (
+          <Button
+            color="primary"
+            disabled={isFetching || failed}
+            onClick={() => refetch()}
+          >
+            {t("app.generate")}
+          </Button>
+        )}
+      </div>
+      {definition && language.key === "en" && (
+        <User
+          avatarProps={{
+            radius: "lg",
+            src: definition.imgUrl,
+            showFallback: true,
+          }}
+          name={translation}
+        />
       )}
+      <div className="flex flex-col items-center justify-start space-y-4">
+        {word && !isFetching && (
+          <>
+            {language.key === "en" && <Code size="lg">{word}</Code>}
+            {dictionaryData.length < 1 && !isError && !isLoading && (
+              <Button color="secondary" size="sm" onClick={() => reload()}>
+                {t("app.see_definition")}
+              </Button>
+            )}
+            {isError && language.key === "en" && (
+              <div>
+                <small style={{ color: "grey" }}>
+                  <i>{t("app.definition_not_found")}.</i>
+                </small>
+                <br />
+                <a
+                  href={`https://www.google.com/search?q=${encodeURIComponent(
+                    `Definition ${word}`
+                  )}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  {t("app.see_definition")}
+                </a>
+              </div>
+            )}
+
+            {!isLoading && language.key === "en" && (
+              <EnglishDefinitions dictionaryData={dictionaryData} />
+            )}
+            {!isDefFetching &&
+              !isTranslationFetching &&
+              !isFetching &&
+              language.key === "fr" &&
+              translation && (
+                <FrenchDefinitions
+                  definitions={definition?.meanings}
+                  imgUrl={definition?.imgUrl}
+                  wordEnglish={word}
+                  word={translation ?? ""}
+                  defNotFound={isDefError}
+                />
+              )}
+            {word &&
+              !failed &&
+              !isDefFetching &&
+              !isTranslationFetching &&
+              !isFetching && (
+                <Button
+                  color="default"
+                  size="sm"
+                  disabled={isFetching}
+                  onClick={() => refetch()}
+                >
+                  {t("app.pick_other_word")}
+                </Button>
+              )}
+          </>
+        )}
+      </div>
     </div>
   );
 };

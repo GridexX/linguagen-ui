@@ -1,60 +1,66 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useQuery } from "react-query";
 import { ZodError } from "zod";
-import { FrenchWikiSchema, frenchWikiSchema } from "./response";
+import { frenchWikiSchema } from "./response";
 import axios from "axios";
-import { getFirstImageSrc } from "../utils";
+import { getFirstImageSrc, transformToDef } from "../utils";
+import { FrenchDefinition } from "./types";
 
-const PROXY_URL = import.meta.env.VITE_PROXY_URL;
+const API_URL = import.meta.env.VITE_API_URL;
 
-export const useGetFrenchDefinition = (word: string | null) => {
-  const [def, setDef] = useState<FrenchWikiSchema | null>(null);
+export const useGetFrenchDefinition = () => {
+  const [def, setDef] = useState<FrenchDefinition | null>(null);
 
-  const [search, setSearch] = useState("");
-
-  useEffect(() => {
-    const f = async () => {
-      let s = word.replaceAll(" ", "_");
-      s = encodeURI(s);
-      console.log("Encoded:" + s);
-      setSearch(s);
-      const src = "https:" + (await getFirstImageSrc("oiseau"));
-      console.log("GetFirstIMGSRC " + src);
-    };
-    if (typeof word === "string") {
-      console.log("UseEffect");
-      f();
-    }
-  }, [search, setSearch, word]);
+  const [word, setWord] = useState<string | null>(null);
+  const [error, setError] = useState<boolean>(false);
 
   const fetchDictionaryDef = async () => {
+    if (typeof word !== "string") throw new Error();
     const data = new FormData();
+    data.append("motWikiComplement", word);
 
-    data.append("motWikiComplement", search);
-
-    const options = {
+    const { data: defData } = await axios.request({
       method: "POST",
-      url: `${PROXY_URL}/app/api_wiki_complement.php`,
+      url: `${API_URL}/app/api_wiki_complement.php`,
       data,
       headers: {
         "Access-Control-Allow-Origin": "*",
       },
-    };
+    });
+    // Replace space and encoreURI
+    let s = word.replaceAll(" ", "_");
+    s = encodeURI(s);
+    console.log("Word encoded: "+s)
+    const src = await await getFirstImageSrc(s);
+    const result = frenchWikiSchema.safeParse(defData);
 
-    try {
-      const { data } = await axios.request(options);
-      return frenchWikiSchema.parse(data);
-    } catch (error) {
-      console.error(error);
+    if (result.success) {
+      if(result.data.error.length > 1) {
+        setError(true)
+      } else {
+        setDef(transformToDef(result.data, src));
+        setError(false)
+      }
+    } else {
+      console.error(
+        `No definition found for the word ${word}, error: ${result.error}`
+      );
+      throw new Error();
     }
   };
 
   const { isFetching, isError } = useQuery(
-    word ?? "dictionnaryData",
+    word ?? "defWord",
     fetchDictionaryDef,
+
     {
       enabled: typeof word === "string",
-      onSuccess: (data) => setDef(data),
+      retry: false,
+      refetchOnMount: false,
+      refetchOnReconnect: false,
+      refetchInterval: 960000,
+      refetchOnWindowFocus: false,
+      retryOnMount: false,
       onError: (error: unknown) => {
         if (error instanceof ZodError) {
           console.error("Validation error:", error.errors);
@@ -66,8 +72,9 @@ export const useGetFrenchDefinition = (word: string | null) => {
   );
 
   return {
+    setWord,
     definition: def,
     isFetching,
-    isError,
+    isError: isError || error,
   };
 };

@@ -3,6 +3,14 @@
     "description": "Une application pour générer des mots aléatoires",
     "footer": "Crée par <1>GridexX</1> pendant les vancances de Noel 🎄"
   },
+  "app": {
+    "generate": "Générer un mot",
+    "pick_other_word": "Choisir un nouveau mot",
+    "see_definition": "Chercher la définition",
+    "definition_not_found": "Définition introuvable",
+    "search": "Chercher la définition sur Google",
+    "error_fetching": "Il y a une erreur avec l'API, réessayez plus tard"
+  },
   "settings": {
     "name": "Paramètres",
     "darkMode": "Mode sombre",

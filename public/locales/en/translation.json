@@ -5,9 +5,11 @@
   },
   "app": {
     "generate": "Generate a word",
-    "refresh": "Pick another word",
-    "definition": "See definition",
-    "search": "Search definition on Google"
+    "pick_other_word": "Pick another word",
+    "see_definition": "See definition",
+    "definition_not_found": "Définition introuvable",
+    "search": "Search definition on Google",
+    "error_fetching": "There was an error with the API, try again later"
   },
   "settings": {
     "name": "Settings",
