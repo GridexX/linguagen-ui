@@ -8,58 +8,52 @@ import {
   Tooltip,
   User,
 } from "@nextui-org/react";
-import { Meaning } from "../api/types";
+import { FrenchDefinition } from "../api/types";
 import { useTranslation } from "react-i18next";
 import { addSpacesAroundHtmlCodes } from "../utils";
 
-type Props = {
-  definitions?: Meaning[];
-  imgUrl?: string;
-  word: string;
-  wordEnglish: string;
-  defNotFound: boolean;
-};
 
-const FrenchDefinitions = ({
-  definitions,
-  imgUrl,
-  word,
-  wordEnglish,
-  defNotFound,
-}: Props) => {
+type Props = {
+  frenchDefinition: FrenchDefinition;
+}
+
+const FrenchDefinitions = ({frenchDefinition}: Props) => {
+  const { definitions, imageUrl, word, translation, defNotFound } = frenchDefinition;
+  console.log(frenchDefinition)
   const { t } = useTranslation();
 
   const returnStrongPar = (def: string) => {
-    if(!def.startsWith("(")) return <>{def}</>
+    if (!def.startsWith("(")) return <>{def}</>;
     // SPlit for the parenthesis and filter empty elements
-    const wordsSplitted = def.split("(").flatMap((word) => word.split(")"))
-      .filter((word) => word.length > 0);
+    const wordsSplitted = def
+      .split("(")
+      .flatMap((translation) => translation.split(")"))
+      .filter((translation) => translation.length > 0);
     // Entry surrounded by parenthesis should be placed in strong balisis
     return wordsSplitted.map((entries, index) =>
-      index < wordsSplitted.length - 1 ? <strong>{entries}</strong> : <>{entries}</>
+      index < wordsSplitted.length - 1 ? (
+        <strong>{entries}</strong>
+      ) : (
+        <>{entries}</>
+      )
     );
   };
 
   return (
     <Card className="max-w-[600px]">
       <CardHeader className="flex gap-3 text-xl">
-        <Tooltip
-          content={wordEnglish}
-          color="default"
-          delay={1000}
-          closeDelay={500}
-        >
+        <Tooltip content={word} color="default" delay={1000} closeDelay={500}>
           <User
             className="text-xl"
-            name={word}
+            name={translation}
             avatarProps={{
               isBordered: true,
               radius: "lg",
               size: "lg",
               color: "default",
               showFallback: true,
-              src: imgUrl,
-              title: word,
+              src: imageUrl,
+              title: translation,
             }}
           />
         </Tooltip>
@@ -69,12 +63,12 @@ const FrenchDefinitions = ({
         {!defNotFound &&
           definitions &&
           definitions.map((definition, index) => (
-            <>
-              <div key={index} className="my-3">
+            <div key={index}>
+              <div className="my-3">
                 <h4 className="first-letter:uppercase text-md">
                   {definition.partOfSpeech}
                 </h4>
-                <ul>
+                <ul >
                   {definition.definitions.map((def, i) => (
                     <li key={i} className="my-1 px-2 text-sm">
                       &#183; {returnStrongPar(addSpacesAroundHtmlCodes(def))}
@@ -85,7 +79,7 @@ const FrenchDefinitions = ({
               {index < definitions.length - 1 && (
                 <Divider className="h-divider" />
               )}
-            </>
+            </div>
           ))}
         {(!definitions || defNotFound) && (
           <p className="small text-danger-500 italic">
@@ -100,7 +94,7 @@ const FrenchDefinitions = ({
             isExternal
             showAnchorIcon
             href={`https://www.google.com/search?q=${encodeURIComponent(
-              `Definition ${word}`
+              `Definition ${translation}`
             )}`}
           >
             {t("app.see_definition")}

@@ -1,14 +1,22 @@
 import { z } from "zod";
 
-export type Meaning = {
-  partOfSpeech: string;
-  definitions: string[];
-};
+const meaning = z.object({
+  partOfSpeech: z.string(),
+  definitions: z.array(z.string()),
+});
 
-export type FrenchDefinition = {
-  imgUrl?: string;
-  meanings: Meaning[];
-};
+export type Meaning = z.infer<typeof meaning>;
+
+export const frenchDefinitionSchema = z.object({
+  translation: z.string(),
+  word: z.string(),
+  definitions: z.array(meaning),
+  pluralDetected: z.boolean(),
+  defNotFound: z.boolean(),
+  imageUrl: z.string(),
+});
+
+export type FrenchDefinitionSchema = z.infer<typeof frenchDefinitionSchema>;
 
 export const translationSchema = z.object({ translation: z.string() });
 
