@@ -8,13 +8,12 @@ import {
   Tooltip,
   User,
 } from "@nextui-org/react";
-import { FrenchDefinition } from "../api/types";
+import { FrenchDefinitionSchema, Meaning } from "../api/types";
 import { useTranslation } from "react-i18next";
-import { addSpacesAroundHtmlCodes } from "../utils";
 
 
 type Props = {
-  frenchDefinition: FrenchDefinition;
+  frenchDefinition: FrenchDefinitionSchema;
 }
 
 const FrenchDefinitions = ({frenchDefinition}: Props) => {
@@ -62,16 +61,16 @@ const FrenchDefinitions = ({frenchDefinition}: Props) => {
       <CardBody>
         {!defNotFound &&
           definitions &&
-          definitions.map((definition, index) => (
+          definitions.map((definition: Meaning, index: number) => (
             <div key={index}>
               <div className="my-3">
                 <h4 className="first-letter:uppercase text-md">
                   {definition.partOfSpeech}
                 </h4>
                 <ul >
-                  {definition.definitions.map((def, i) => (
+                  {definition.definitions.map((def: string, i: number) => (
                     <li key={i} className="my-1 px-2 text-sm">
-                      &#183; {returnStrongPar(addSpacesAroundHtmlCodes(def))}
+                      &#183; {returnStrongPar(def)}
                     </li>
                   ))}
                 </ul>
